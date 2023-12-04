@@ -1,0 +1,51 @@
+name: Coverage and badges
+
+on:
+  pull_request:
+    branches:
+      - main
+env:
+  SOLIDATUS_URL: ${{secrets.SOLIDATUS_URL}}
+  SOLIDATUS_API_KEY: ${{secrets.SOLIDATUS_API_KEY}}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Test Changed Files
+
+    steps:
+      - name: Checkout repo content
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+       - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          echo "pip install components"
+          python -m pip install -e ./src/solidatus_api
+          pip install anybadge coverage pytest
+
+          
+      - name: Coverage
+
+        run: |
+          coverage run -m pytest
+          coverage json
+          coverage html
+          python .github/gen_badges.py
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add coverage.svg
+          git add coverage.json
+          git commit  -m "Github Action add latest coverage svg"
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ github.head_ref }}
+
+
